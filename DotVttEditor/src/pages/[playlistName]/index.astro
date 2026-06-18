@@ -6,7 +6,7 @@ import {
   mutateSortVidsArray,
 } from "@utils";
 import {AppWrapper} from "@components/AppWrapper";
-import {getPlaylistData} from "@lib/routes";
+import {fetchPlaylist} from "@lib/routes";
 import {actions} from "astro:actions";
 import {env} from "cloudflare:workers";
 import config from "src/domainConfig.ts";
@@ -24,9 +24,8 @@ const configMatch = Object.values(config).find(
 );
 const playlistDisplayName = configMatch?.displayName ?? playlist;
 
-// DATA FETCHING (Playback API — unchanged path; the BC player relies on it)
-let headersToForward = Astro.request.headers;
-let data = await getPlaylistData(Astro.url.origin, playlist, headersToForward);
+// DATA FETCHING — in-process (no self-fetch; see fetchPlaylist).
+let data = await fetchPlaylist(playlist);
 if (!data) return Astro.redirect("404");
 
 // DATA SHAPING
