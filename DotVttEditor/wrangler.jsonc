@@ -1,6 +1,6 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "dot-vtt-editor",
+	"name": "vtt-editor",
 	// Unified entrypoint provided by @astrojs/cloudflare v13 — handles both
 	// `astro dev` and the production worker. The adapter auto-generates the
 	// static `assets` config, so it's intentionally not set here.
