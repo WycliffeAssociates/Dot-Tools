@@ -30,13 +30,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 11.3.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22.22.3
           cache: pnpm
@@ -53,6 +53,14 @@ jobs:
         run: |
           pnpm --filter @dottools/shared run typecheck
           pnpm --filter @dottools/shared run test
+
+      # Generate worker-configuration.d.ts (gitignored, so absent in a fresh
+      # checkout). It declares the `cloudflare:workers` module + binding types
+      # that `astro check` needs — without it the check fails ts(2307). Pure
+      # local codegen from wrangler.jsonc; no Cloudflare auth required.
+      - name: Generate Cloudflare worker types
+        run: pnpm --filter dot-vids run cf-typegen
+
       - name: Astro check (editor)
         run: pnpm --filter dot-vids run check
 
