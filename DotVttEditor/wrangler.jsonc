@@ -44,15 +44,20 @@
 	// process.env — what `op run --env-file=.env.op` injects — so the dev scripts
 	// are just `op run … -- astro dev`, no CLOUDFLARE_INCLUDE_PROCESS_ENV flag and
 	// nothing on disk. scripts/push-secrets.mjs pushes the same set to production.
-	"secrets": {
-		"required": [
-			"ACCOUNT_ID",
-			"BC_CLIENT_ID",
-			"BC_CLIENT_SECRET",
-			"POLICY_KEY",
-			"PLAYER_ID",
-			"DOT_ASSETS_PUBLIC_URL",
-			"TMP_IMGS_BUCKET_URL"
-		]
-	}
+	//
+	// TEMPORARILY DISABLED for first-deploy bootstrap: the gate blocks the
+	// deploy that creates the worker, but push-secrets can't set secrets until
+	// the worker exists. Re-enabled in the next commit once the worker + secrets
+	// are in place.
+	// "secrets": {
+	// 	"required": [
+	// 		"ACCOUNT_ID",
+	// 		"BC_CLIENT_ID",
+	// 		"BC_CLIENT_SECRET",
+	// 		"POLICY_KEY",
+	// 		"PLAYER_ID",
+	// 		"DOT_ASSETS_PUBLIC_URL",
+	// 		"TMP_IMGS_BUCKET_URL"
+	// 	]
+	// }
 }
