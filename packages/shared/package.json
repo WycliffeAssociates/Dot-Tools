@@ -1,0 +1,25 @@
+{
+  "name": "@dottools/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./brightcove": "./src/brightcove/index.ts",
+    "./vtt": "./src/vtt/index.ts",
+    "./reference": "./src/reference/index.ts",
+    "./books": "./src/books/index.ts",
+    "./r2-keys": "./src/r2-keys.ts",
+    "./constants": "./src/constants.ts",
+    "./winners": "./src/winners.ts"
+  },
+  "scripts": {
+    "typecheck": "tsgo --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.6"
+  }
+}

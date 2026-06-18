@@ -1,0 +1,45 @@
+---
+import Layout from "@layouts/Layout.astro";
+import { actions } from "astro:actions";
+
+// Fetch playlists from Brightcove at request time — no static config.
+const { data: playlists, error } = await Astro.callAction(actions.listPlaylists, {});
+if (error) {
+  console.error("Failed to list Brightcove playlists", error);
+}
+
+// Use reference_id when present (stable, URL-safe), else the playlist's
+// numeric id. The editor's [playlistName] route accepts either.
+const items = (playlists ?? [])
+  .map((p) => ({
+    href: encodeURIComponent(p.reference_id ?? p.id),
+    label: p.name,
+  }))
+  .toSorted((a, b) => a.label.localeCompare(b.label));
+---
+
+<Layout title="VTT Editor Home">
+  <div class="p-4">
+    <h1 class="mb-4">Go to a playlist</h1>
+    {
+      error && (
+        <p class="text-red-600 mb-4">
+          Couldn't load playlists from Brightcove. Check BC_CLIENT_ID /
+          BC_CLIENT_SECRET / ACCOUNT_ID in env.
+        </p>
+      )
+    }
+    {!error && items.length === 0 && <p>No playlists found.</p>}
+    <ul class="flex flex-col gap-4">
+      {
+        items.map((item) => (
+          <li>
+            <a class="text-blue-500 underline" href={`/${item.href}`}>
+              {item.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</Layout>

@@ -1,0 +1,25 @@
+{
+  "name": "@dottools/ocr-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "op run --env-file=.env.op -- tsx watch src/main.ts",
+    "start": "op run --env-file=.env.op -- tsx src/main.ts",
+    "typecheck": "tsgo --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dottools/shared": "workspace:*",
+    "@gutenye/ocr-node": "^1.4.8",
+    "@hono/node-server": "^1.13.7",
+    "aws4fetch": "^1.0.20",
+    "effect": "4.0.0-beta.70",
+    "hono": "^4.12.23",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.6",
+    "tsx": "^4.19.2"
+  }
+}

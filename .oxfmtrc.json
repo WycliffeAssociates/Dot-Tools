@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.astro/**",
+    "**/.wrangler/**",
+    "**/coverage/**",
+    "DotVttEditor/public/**",
+    "DotVttEditor/pnpm-lock.yaml",
+    "DotOcrApp/models/**",
+    "DotOcrApp/data/**",
+    "plans/**",
+    "repomixAltApp.xml",
+    "pnpm-lock.yaml"
+  ]
+}

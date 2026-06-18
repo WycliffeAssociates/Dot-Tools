@@ -1,0 +1,29 @@
+# build output
+dist/
+
+# generated types
+.astro/
+worker-configuration.d.ts
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+ignore-notes.md
+.dev.vars
+.dev.vars.bak
+stats.html
+/functions/\[\[path\]\].js
+will-notes.md
+.wrangler

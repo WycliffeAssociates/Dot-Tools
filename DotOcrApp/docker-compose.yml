@@ -1,0 +1,61 @@
+# Run from this directory: `docker compose up` (CPU) or
+# `docker compose --profile gpu up` (NVIDIA box).
+#
+# Build context is the repo root (..) so packages/shared is included.
+
+services:
+  ocr:
+    build:
+      context: ..
+      dockerfile: DotOcrApp/Dockerfile
+    # Values come from the host env, populated by `op run` (see README).
+    # Passthrough (no `=value`) forwards each var from the compose process.
+    environment:
+      - BRIGHTCOVE_ACCOUNT_ID
+      - BRIGHTCOVE_CLIENT_ID
+      - BRIGHTCOVE_CLIENT_SECRET
+      - BRIGHTCOVE_POLICY_KEY
+      - R2_ACCOUNT_ID
+      - R2_ACCESS_KEY_ID
+      - R2_SECRET_ACCESS_KEY
+      - R2_BUCKET_ASSETS
+      - R2_BUCKET_TMP
+      - R2_PUBLIC_ASSETS_URL
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist OCR model cache + tmp scratch across runs.
+      - ocr-data:/repo/DotOcrApp/data
+
+  ocr-gpu:
+    profiles: ["gpu"]
+    build:
+      context: ..
+      dockerfile: DotOcrApp/Dockerfile.gpu
+    # Values come from the host env, populated by `op run` (see README).
+    # Passthrough (no `=value`) forwards each var from the compose process.
+    environment:
+      - BRIGHTCOVE_ACCOUNT_ID
+      - BRIGHTCOVE_CLIENT_ID
+      - BRIGHTCOVE_CLIENT_SECRET
+      - BRIGHTCOVE_POLICY_KEY
+      - R2_ACCOUNT_ID
+      - R2_ACCESS_KEY_ID
+      - R2_SECRET_ACCESS_KEY
+      - R2_BUCKET_ASSETS
+      - R2_BUCKET_TMP
+      - R2_PUBLIC_ASSETS_URL
+    ports:
+      - "8000:8000"
+    volumes:
+      - ocr-data:/repo/DotOcrApp/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: ["gpu"]
+
+volumes:
+  ocr-data:

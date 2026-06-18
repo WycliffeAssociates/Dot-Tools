@@ -1,0 +1,103 @@
+---
+import Layout from "@layouts/Layout.astro";
+import type {IVidWithCustom, envPropsForPlayer} from "@customTypes/types";
+import {
+  groupObjectsByKey,
+  mutateSortVidsArray,
+} from "@utils";
+import {AppWrapper} from "@components/AppWrapper";
+import {getPlaylistData} from "@lib/routes";
+import {actions} from "astro:actions";
+import {env} from "cloudflare:workers";
+import config from "src/domainConfig.ts";
+
+const {playlistName} = Astro.params;
+if (!playlistName) return Astro.redirect("404");
+
+// Resolve the URL path segment to a Brightcove playlist reference. Today the
+// segment IS the reference_id (the home route generates URLs from Brightcove
+// directly). The optional `domainConfig.ts` still provides license/aboutImg
+// metadata when present, but a missing entry is no longer a 404.
+const playlist = decodeURIComponent(playlistName);
+const configMatch = Object.values(config).find(
+  (c) => c.playlist.toLowerCase() === playlist.toLowerCase(),
+);
+const playlistDisplayName = configMatch?.displayName ?? playlist;
+
+// DATA FETCHING (Playback API — unchanged path; the BC player relies on it)
+let headersToForward = Astro.request.headers;
+let data = await getPlaylistData(Astro.url.origin, playlist, headersToForward);
+if (!data) return Astro.redirect("404");
+
+// DATA SHAPING
+const vids = data.videos as IVidWithCustom[];
+if (!vids || !vids.length) {
+  return new Response(null, {
+    status: 404,
+  });
+}
+const {sortedVids, filteredByMatchingReferenceId} = mutateSortVidsArray(vids);
+const bucketized = groupObjectsByKey<IVidWithCustom, "book">(
+  sortedVids,
+  "book"
+);
+if (filteredByMatchingReferenceId.notMatching?.length) {
+  bucketized.other = filteredByMatchingReferenceId.notMatching;
+}
+// ---ROUTING/INITIAL PROPS
+const defaultBook = bucketized[Object.keys(bucketized)[0]];
+const defaultChap = defaultBook[0];
+const initialData = {vids: defaultBook, chap: defaultChap};
+
+// astro dev now runs on workerd, so the worker `env` is populated in dev too —
+// no more dev/prod split for reading bindings.
+let cfEnv: envPropsForPlayer = {
+  accountId: env.ACCOUNT_ID,
+  playerId: env.PLAYER_ID,
+};
+if (!cfEnv.accountId || !cfEnv.playerId) {
+  return Astro.redirect("404");
+}
+
+// figure out what's been completed:
+let {data: finishedMap, error: finishedMapError} = await Astro.callAction(
+  actions.getFinishedMap,
+  {
+    playlist,
+  }
+);
+if (finishedMapError) {
+  console.error(finishedMapError);
+}
+if (!finishedMap) {
+  const defaultMap = data.videos!.reduce(
+    (acc: Record<string, boolean>, vid) => {
+      const id = vid.id;
+      if (id) {
+        acc[id] = false;
+      }
+      return acc;
+    },
+    {}
+  );
+  await Astro.callAction(actions.initFinishedMap, {
+    playlist,
+    map: defaultMap,
+  });
+  finishedMap = defaultMap;
+}
+---
+
+<Layout title={playlistDisplayName}>
+  <div class="">
+    <AppWrapper
+      client:only="solid-js"
+      initialData={initialData}
+      playlist={playlist}
+      playlistDisplayName={playlistDisplayName}
+      vids={bucketized}
+      playerEnv={cfEnv}
+      finishedMap={finishedMap}
+    />
+  </div>
+</Layout>

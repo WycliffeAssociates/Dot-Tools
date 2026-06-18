@@ -1,0 +1,5 @@
+[tools]
+# Pin Node to 22 LTS. Node 24.4.x has a confirmed regression
+# (nodejs/node#59057) that OOMs pnpm installs while hashing large package
+# tarballs (e.g. onnxruntime-node's 266MB native binaries). 22 LTS avoids it.
+node = "22.22.3"

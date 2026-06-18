@@ -1,0 +1,87 @@
+name: Deploy VTT editor
+
+# Deploys the editor Worker (`dot-vids`) to Cloudflare. Unlike the playlist
+# cache (which deploys on every push), this one is path-filtered: the editor is
+# heavier to build, so only redeploy when something it actually ships could have
+# changed —
+#   - DotVttEditor/**       its own source/config
+#   - packages/shared/**    it imports @dottools/shared (r2-keys, brightcove, …)
+#   - pnpm-lock.yaml        dependency changes
+#   - this workflow file
+# A pure DotVttEditor/** filter would miss shared-package changes that alter the
+# editor's behavior, so shared is included on purpose.
+on:
+  push:
+    branches: [master]
+    paths:
+      - "DotVttEditor/**"
+      - "packages/shared/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/deploy-vtt-editor.yml"
+  workflow_dispatch: {}
+
+# Never let two editor deploys race; cancel an in-flight one if a newer push
+# lands (false = let the current one finish, matching the cache worker).
+concurrency:
+  group: deploy-vtt-editor
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.3.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Tests / type safety before we ship. Shared is the editor's dependency,
+      # so its unit tests + typecheck gate the deploy. `astro check` is the
+      # editor's own type check; it boots the Cloudflare runtime, but
+      # astro.config sets `remoteBindings: !process.env.CI`, so here (CI=true,
+      # set by Actions) it uses simulated bindings — no wrangler login, no real
+      # infra touched.
+      - name: Typecheck + test (shared)
+        run: |
+          pnpm --filter @dottools/shared run typecheck
+          pnpm --filter @dottools/shared run test
+      - name: Astro check (editor)
+        run: pnpm --filter dot-vids run check
+
+      # 1Password CLI so the `deploy` script's own `op run` can resolve the
+      # op:// refs in .env.op headlessly.
+      - uses: 1password/install-cli-action@v4
+
+      # Resolve the Cloudflare deploy creds from 1Password into masked step
+      # OUTPUTS (export-env: false — the recommended pattern), so they never
+      # live as GitHub Actions secrets. The only GitHub secret is the 1Password
+      # service-account token below.
+      - name: Load Cloudflare creds from 1Password
+        id: op-cf
+        uses: 1password/load-secrets-action@v4
+        with:
+          export-env: false
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: op://DevOps/cloudflare-worker-deploy-token/CF_ACCOUNT_ID
+          CLOUDFLARE_API_TOKEN: op://DevOps/cloudflare-worker-deploy-token/CF_API_TOKEN
+
+      # `deploy` = `op run --env-file=.env.op -- sh -c 'astro build && wrangler
+      # deploy && node ./scripts/push-secrets.mjs'`. The script's own op run
+      # injects the worker secrets (so push-secrets can `wrangler secret bulk`
+      # them); the CF creds passed here authenticate wrangler and are inherited
+      # by that op run subprocess. OP_SERVICE_ACCOUNT_TOKEN authenticates both
+      # the load-secrets step above and the script's op run.
+      - name: Deploy + sync secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ steps.op-cf.outputs.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.op-cf.outputs.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm --filter dot-vids run deploy

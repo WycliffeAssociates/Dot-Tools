@@ -1,0 +1,168 @@
+packages:
+  - "packages/*"
+  - "DotVttEditor"
+  - "DotOcrApp"
+  - "DotPlaylistCache"
+
+# Reject packages published less than 7 calendar days ago (≈5 business days
+# plus a weekend cushion). Applies to all deps including transitives.
+# Anything we deliberately want before that window must be listed in
+# `minimumReleaseAgeExclude` below.
+minimumReleaseAge: 10080
+
+# When no in-range version of a transitive dep satisfies the age policy (e.g.
+# Astro just bumped to a Babel patch released yesterday and there's no older
+# 7.29.x), fall back to the newest available rather than failing the install.
+# Direct deps still respect the age policy because we control their ranges.
+# Flip to true (or remove) for hard enforcement — and be ready to maintain
+# `minimumReleaseAgeExclude`.
+minimumReleaseAgeStrict: false
+
+# Trust our own generated lockfile and skip the post-resolution verification
+# pass that re-applies `minimumReleaseAge` to every entry. The age policy still
+# applies during resolution (when new deps are added), but once locked the
+# entries are treated as trusted. Appropriate for closed-source / single-author
+# projects per the pnpm docs; flip to false if outside contributors can edit
+# the lockfile or CI needs to re-verify.
+trustLockfile: true
+
+allowBuilds:
+  esbuild: true
+  msgpackr-extract: true
+  onnxruntime-node: true
+  sharp: true
+  tesseract.js: true
+  workerd: true
+
+# Forced version pin carried over from DotVttEditor — older intl-messageformat
+# avoids a regression with @solid-primitives/i18n.
+overrides:
+  intl-messageformat: "10.5.4"
+minimumReleaseAgeExclude:
+  - "@oxfmt/binding-android-arm-eabi@0.52.0"
+  - "@oxfmt/binding-android-arm64@0.52.0"
+  - "@oxfmt/binding-darwin-arm64@0.52.0"
+  - "@oxfmt/binding-darwin-x64@0.52.0"
+  - "@oxfmt/binding-freebsd-x64@0.52.0"
+  - "@oxfmt/binding-linux-arm-gnueabihf@0.52.0"
+  - "@oxfmt/binding-linux-arm-musleabihf@0.52.0"
+  - "@oxfmt/binding-linux-arm64-gnu@0.52.0"
+  - "@oxfmt/binding-linux-arm64-musl@0.52.0"
+  - "@oxfmt/binding-linux-ppc64-gnu@0.52.0"
+  - "@oxfmt/binding-linux-riscv64-gnu@0.52.0"
+  - "@oxfmt/binding-linux-riscv64-musl@0.52.0"
+  - "@oxfmt/binding-linux-s390x-gnu@0.52.0"
+  - "@oxfmt/binding-linux-x64-gnu@0.52.0"
+  - "@oxfmt/binding-linux-x64-musl@0.52.0"
+  - "@oxfmt/binding-openharmony-arm64@0.52.0"
+  - "@oxfmt/binding-win32-arm64-msvc@0.52.0"
+  - "@oxfmt/binding-win32-ia32-msvc@0.52.0"
+  - "@oxfmt/binding-win32-x64-msvc@0.52.0"
+  - "@oxlint/binding-android-arm-eabi@1.67.0"
+  - "@oxlint/binding-android-arm64@1.67.0"
+  - "@oxlint/binding-darwin-arm64@1.67.0"
+  - "@oxlint/binding-darwin-x64@1.67.0"
+  - "@oxlint/binding-freebsd-x64@1.67.0"
+  - "@oxlint/binding-linux-arm-gnueabihf@1.67.0"
+  - "@oxlint/binding-linux-arm-musleabihf@1.67.0"
+  - "@oxlint/binding-linux-arm64-gnu@1.67.0"
+  - "@oxlint/binding-linux-arm64-musl@1.67.0"
+  - "@oxlint/binding-linux-ppc64-gnu@1.67.0"
+  - "@oxlint/binding-linux-riscv64-gnu@1.67.0"
+  - "@oxlint/binding-linux-riscv64-musl@1.67.0"
+  - "@oxlint/binding-linux-s390x-gnu@1.67.0"
+  - "@oxlint/binding-linux-x64-gnu@1.67.0"
+  - "@oxlint/binding-linux-x64-musl@1.67.0"
+  - "@oxlint/binding-openharmony-arm64@1.67.0"
+  - "@oxlint/binding-win32-arm64-msvc@1.67.0"
+  - "@oxlint/binding-win32-ia32-msvc@1.67.0"
+  - "@oxlint/binding-win32-x64-msvc@1.67.0"
+  - "@typescript/native-preview-darwin-arm64@7.0.0-dev.20260526.1"
+  - "@typescript/native-preview-darwin-x64@7.0.0-dev.20260526.1"
+  - "@typescript/native-preview-linux-arm64@7.0.0-dev.20260526.1"
+  - "@typescript/native-preview-linux-arm@7.0.0-dev.20260526.1"
+  - "@typescript/native-preview-linux-x64@7.0.0-dev.20260526.1"
+  - "@typescript/native-preview-win32-arm64@7.0.0-dev.20260526.1"
+  - "@typescript/native-preview-win32-x64@7.0.0-dev.20260526.1"
+  - "@typescript/native-preview@7.0.0-dev.20260526.1"
+  - oxfmt@0.52.0
+  - oxlint@1.67.0
+  - "@babel/code-frame@7.29.7"
+  - "@babel/compat-data@7.29.7"
+  - "@babel/core@7.29.7"
+  - "@babel/generator@7.29.7"
+  - "@babel/helper-compilation-targets@7.29.7"
+  - "@babel/helper-globals@7.29.7"
+  - "@babel/helper-module-imports@7.29.7"
+  - "@babel/helper-module-transforms@7.29.7"
+  - "@babel/helper-plugin-utils@7.29.7"
+  - "@babel/helper-string-parser@7.29.7"
+  - "@babel/helper-validator-identifier@7.29.7"
+  - "@babel/helper-validator-option@7.29.7"
+  - "@babel/helpers@7.29.7"
+  - "@babel/parser@7.29.7"
+  - "@babel/plugin-syntax-jsx@7.29.7"
+  - "@babel/runtime@7.29.7"
+  - "@babel/template@7.29.7"
+  - "@babel/traverse@7.29.7"
+  - "@babel/types@7.29.7"
+  - "@typescript-eslint/project-service@8.60.0"
+  - "@typescript-eslint/scope-manager@8.60.0"
+  - "@typescript-eslint/tsconfig-utils@8.60.0"
+  - "@typescript-eslint/types@8.60.0"
+  - "@typescript-eslint/typescript-estree@8.60.0"
+  - "@typescript-eslint/utils@8.60.0"
+  - "@typescript-eslint/visitor-keys@8.60.0"
+  - "@vitest/expect@4.1.7"
+  - "@vitest/mocker@4.1.7"
+  - "@vitest/pretty-format@4.1.7"
+  - "@vitest/runner@4.1.7"
+  - "@vitest/snapshot@4.1.7"
+  - "@vitest/spy@4.1.7"
+  - "@vitest/utils@4.1.7"
+  - baseline-browser-mapping@2.10.32
+  - electron-to-chromium@1.5.361
+  - es-object-atoms@1.1.2
+  - local-pkg@1.2.1
+  - lru-cache@11.5.0
+  - node-releases@2.0.46
+  - semver@7.8.1
+  - tinyexec@1.2.2
+  - vitest@4.1.7
+  - effect@4.0.0-beta.70
+  - hono@4.12.23
+  - "@astrojs/cloudflare@13.5.5"
+  - "@cloudflare/workerd-darwin-64@1.20260526.1"
+  - "@cloudflare/workerd-darwin-arm64@1.20260526.1"
+  - "@cloudflare/workerd-linux-64@1.20260526.1"
+  - "@cloudflare/workerd-linux-arm64@1.20260526.1"
+  - "@cloudflare/workerd-windows-64@1.20260526.1"
+  - "@cloudflare/workers-types@4.20260527.1"
+  - "@unocss/cli@66.7.0"
+  - "@unocss/config@66.7.0"
+  - "@unocss/core@66.7.0"
+  - "@unocss/extractor-arbitrary-variants@66.7.0"
+  - "@unocss/inspector@66.7.0"
+  - "@unocss/preset-attributify@66.7.0"
+  - "@unocss/preset-icons@66.7.0"
+  - "@unocss/preset-mini@66.7.0"
+  - "@unocss/preset-tagify@66.7.0"
+  - "@unocss/preset-typography@66.7.0"
+  - "@unocss/preset-uno@66.7.0"
+  - "@unocss/preset-web-fonts@66.7.0"
+  - "@unocss/preset-wind3@66.7.0"
+  - "@unocss/preset-wind4@66.7.0"
+  - "@unocss/preset-wind@66.7.0"
+  - "@unocss/reset@66.7.0"
+  - "@unocss/rule-utils@66.7.0"
+  - "@unocss/transformer-attributify-jsx@66.7.0"
+  - "@unocss/transformer-compile-class@66.7.0"
+  - "@unocss/transformer-directives@66.7.0"
+  - "@unocss/transformer-variant-group@66.7.0"
+  - "@unocss/vite@66.7.0"
+  - astro@6.3.8
+  - miniflare@4.20260526.0
+  - unocss@66.7.0
+  - workerd@1.20260526.1
+  - wrangler@4.95.0
+  - "@unocss/astro@66.7.0"

@@ -1,0 +1,44 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "dot-playlist-cache",
+	// Cloudflare account that owns this Worker (not a secret — also visible in the
+	// dashboard URL). Distinct from the BRIGHTCOVE_ACCOUNT_ID var below. Needed
+	// because the login has access to more than one account.
+	"account_id": "699ebf8f4281a335971efbc2c0bc03d9",
+	"main": "src/index.ts",
+	// Capped by the locally installed workerd binary, like the editor's worker.
+	"compatibility_date": "2026-05-18",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	// Warm cache for Brightcove playlists. Over-aggressive on purpose — calls are
+	// cheap; relax to "*/10" or "*/20" later and lean on POST /refresh for edits.
+	"triggers": {
+		"crons": ["*/5 * * * *"]
+	},
+	// Run `wrangler kv namespace create BRIGHTCOVE_PLAYLISTS` once and paste the id here.
+	"kv_namespaces": [
+		{
+			"binding": "BRIGHTCOVE_PLAYLISTS",
+			"id": "c5ce9e1629aa4793a8da01aaadafbb30"
+		}
+	],
+	// Non-secret. Brightcove is production-only (no env split).
+	"vars": {
+		"BRIGHTCOVE_ACCOUNT_ID": "6314154063001"
+	},
+	// Declares the secrets this Worker needs. At local dev Wrangler auto-loads
+	// these names from process.env (what `op run` injects) — so the dev script is
+	// just `op run --env-file=.env.op -- wrangler dev`, no
+	// CLOUDFLARE_INCLUDE_PROCESS_ENV flag and no whole-env dump. They're pushed to
+	// production by scripts/push-secrets.mjs.
+	"secrets": {
+		"required": [
+			"BRIGHTCOVE_POLICY_KEY",
+			"BRIGHTCOVE_CLIENT_ID",
+			"BRIGHTCOVE_CLIENT_SECRET",
+			"REFRESH_TOKEN"
+		]
+	}
+}

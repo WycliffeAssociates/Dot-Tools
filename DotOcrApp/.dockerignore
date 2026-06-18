@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/.astro
+**/.wrangler
+**/coverage
+**/.git
+DotVttEditor/dist
+DotOcrApp/data
+DotOcrApp/.env

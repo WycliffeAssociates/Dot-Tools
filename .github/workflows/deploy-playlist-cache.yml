@@ -1,0 +1,58 @@
+name: Deploy playlist cache worker
+
+# Simple by design: deploy on every push to master. Overkill when a push only
+# touches the OCR app or editor, but cheap to run and one less thing to reason
+# about. Add `paths:` filters here later if the noise ever matters.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch: {}
+
+# Never let two deploys race; cancel an in-flight one if a newer push lands.
+concurrency:
+  group: deploy-playlist-cache
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.3.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Load Cloudflare creds from 1Password
+        id: op-cf
+        uses: 1password/load-secrets-action@v4
+        with:
+          export-env: false
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          CLOUDFLARE_API_TOKEN: op://DevOps/cloudflare-worker-deploy-token/CF_API_TOKEN
+          CLOUDFLARE_ACCOUNT_ID: op://DevOps/cloudflare-worker-deploy-token/CF_ACCOUNT_ID
+
+      # 1Password CLI so `op run` can resolve the op:// refs in .env.op headlessly.
+      - uses: 1password/install-cli-action@v4
+
+      # The package `deploy` script already wraps itself in `op run --env-file=.env.op`
+      # (= `wrangler deploy` then `scripts/push-secrets.mjs`), so we just invoke it
+      # — no outer op run (that would nest). op resolves the op:// refs headlessly
+      # via OP_SERVICE_ACCOUNT_TOKEN; CLOUDFLARE_API_TOKEN authenticates wrangler.
+      - name: Deploy + sync secrets
+        env:
+          # The deploy script runs `op run --env-file=.env.op` internally to
+          # resolve the Brightcove/refresh secrets, so it needs the service-account
+          # token here too (not just on the op-cf step above).
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ steps.op-cf.outputs.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.op-cf.outputs.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm --filter dot-playlist-cache run deploy

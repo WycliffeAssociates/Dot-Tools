@@ -1,0 +1,53 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  // NOTE: the "import" plugin is intentionally omitted. Its module-graph
+  // resolver runs project-wide (not governed by ignorePatterns or per-path
+  // overrides) and follows imports into node_modules; DotOcrApp's
+  // @gutenye/ocr-node pulls in js-clipper whose clipper.js is not valid UTF-8,
+  // which crashes the resolver. node_modules is still ignored for LINTING.
+  // TypeScript (tsc / astro check) already covers missing imports/exports.
+  "plugins": ["typescript", "unicorn", "promise"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn",
+    "style": "off",
+    "pedantic": "off"
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2024": true
+  },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.astro/**",
+    "**/.wrangler/**",
+    "**/coverage/**",
+    "DotVttEditor/public/**",
+    "DotOcrApp/models/**",
+    "DotOcrApp/data/**"
+  ],
+  "rules": {
+    "no-console": "off",
+    "typescript/no-explicit-any": "warn",
+    // Deliberate `!` assertions are pervasive in the DOM / video.js / parser
+    // code; the author opted into them. Left off rather than rewriting ~25 sites.
+    "typescript/no-non-null-assertion": "off",
+    // Sequential awaits in these pipelines are intentional (ordering / rate
+    // limiting / paginated cursors), not an accidental perf footgun.
+    "no-await-in-loop": "off",
+    // SolidJS component-local helpers reading global stores trip this; harmless.
+    "unicorn/consistent-function-scoping": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.spec.ts"],
+      "rules": {
+        "typescript/no-non-null-assertion": "off"
+      }
+    }
+  ]
+}

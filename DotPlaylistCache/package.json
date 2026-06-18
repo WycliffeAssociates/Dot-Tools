@@ -1,0 +1,20 @@
+{
+  "name": "dot-playlist-cache",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "op run --env-file=.env.op -- wrangler dev",
+    "deploy": "op run --env-file=.env.op -- sh -c 'wrangler deploy && node ./scripts/push-secrets.mjs'",
+    "cf-typegen": "wrangler types",
+    "typecheck": "tsgo --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dottools/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260527.1",
+    "wrangler": "^4.95.0"
+  }
+}

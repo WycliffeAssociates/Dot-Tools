@@ -1,0 +1,19 @@
+# fonts 1 month (max max-age)
+/*.woff
+  Cache-Control: public, max-age=2629746, s-maxage=31536000, must-revalidate
+
+/*.woff2
+  Cache-Control: public, max-age=2629746, s-maxage=31536000, must-revalidate
+
+# player url: 1 day browser, 1 year cdn
+https://players.brightcove.net/6314154063001/9mlrvmAybr_default/index.min.js
+Cache-Control: public, max-age=86400, s-maxage=31536000, must-revalidate
+
+# CSS is hashed,  so it's safe to cache for year at a time
+/_astro/*.css
+Cache-Control: public, max-age=31536000, s-maxage=31536000, must-revalidate
+
+# JS is hashed, so it's safe to cache for year at a time
+/_astro/*.js
+Cache-Control: public, max-age=31536000, s-maxage=31536000, must-revalidate
+

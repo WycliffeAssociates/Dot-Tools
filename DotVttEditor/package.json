@@ -1,0 +1,42 @@
+{
+  "name": "dot-vids",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "op run --env-file=.env.op -- astro dev",
+    "start": "op run --env-file=.env.op -- astro dev",
+    "build": "astro build",
+    "preview": "op run --env-file=.env.op -- astro preview",
+    "deploy": "op run --env-file=.env.op -- sh -c 'astro build && wrangler deploy && node ./scripts/push-secrets.mjs'",
+    "cf-typegen": "wrangler types",
+    "astro": "astro",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^13.5.5",
+    "@astrojs/solid-js": "^6.0.1",
+    "@brightcove/player-loader": "^1.8.1",
+    "@dottools/shared": "workspace:*",
+    "@kobalte/core": "^0.13.11",
+    "@solid-primitives/i18n": "^2.2.1",
+    "@solid-primitives/intersection-observer": "^2.2.4",
+    "@solid-primitives/resize-observer": "^2.1.5",
+    "@solid-primitives/scheduled": "^1.5.3",
+    "@unocss/astro": "^66.7.0",
+    "@unocss/reset": "^66.7.0",
+    "astro": "^6.3.8",
+    "solid-js": "^1.9.13",
+    "video.js": "^8.23.7",
+    "webvtt-parser": "^2.2.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@types/video.js": "^7.3.58",
+    "@types/webvtt-parser": "^2.2.0",
+    "@unocss/transformer-directives": "^66.7.0",
+    "@unocss/transformer-variant-group": "^66.7.0",
+    "unocss": "^66.7.0",
+    "wrangler": "^4.95.0"
+  },
+  "packageManager": "pnpm@9.3.0"
+}

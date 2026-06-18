@@ -1,0 +1,63 @@
+# --- Repo-specific ignores ---
+/plans
+repomixAltApp.xml
+scratchpad.md
+userTodo.md
+
+# --- Dependencies ---
+node_modules/
+.pnpm-store/
+
+# --- Env / secrets ---
+.env
+.env.*
+!.env.op
+.dev.vars
+
+# --- Build output ---
+dist/
+build/
+out/
+.astro/
+.wrangler/
+.next/
+.turbo/
+
+# --- Logs ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Caches ---
+.cache/
+.eslintcache
+.parcel-cache/
+*.tsbuildinfo
+
+# --- Test / coverage ---
+coverage/
+.nyc_output/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- IDE / editor ---
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+*.swo
+
+# --- DotOcrApp runtime data ---
+DotOcrApp/data/
+DotOcrApp/tmp/
+DotOcrApp/models/*.onnx
+
+# --- Personal notes (carried from DotVttEditor) ---
+will-notes.md
+ignore-notes.md
+userTodo.md

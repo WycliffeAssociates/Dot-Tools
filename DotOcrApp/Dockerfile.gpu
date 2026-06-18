@@ -1,0 +1,37 @@
+# GPU image for the company's NVIDIA Linux box. Build context MUST be the repo
+# root. Selected via the `gpu` compose profile:
+#
+#   docker compose --profile gpu up
+#
+# Uses a CUDA runtime base; onnxruntime-node picks the CUDA execution provider
+# when OCR_EXECUTION_PROVIDERS lists `cuda` first (the default) and the CUDA
+# libraries are present. Requires the NVIDIA Container Toolkit on the host.
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+     curl ca-certificates ffmpeg \
+  && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+  && apt-get install -y --no-install-recommends nodejs \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN corepack enable && corepack prepare pnpm@11.3.0 --activate
+
+WORKDIR /repo
+
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json tsconfig.base.json ./
+COPY packages/shared/package.json packages/shared/package.json
+COPY DotVttEditor/package.json DotVttEditor/package.json
+COPY DotOcrApp/package.json DotOcrApp/package.json
+
+RUN pnpm install --filter @dottools/ocr-app... --frozen-lockfile
+
+COPY tsconfig.base.json ./
+COPY packages/shared packages/shared
+COPY DotOcrApp DotOcrApp
+
+WORKDIR /repo/DotOcrApp
+ENV NODE_ENV=production
+EXPOSE 8000
+CMD ["pnpm", "start"]

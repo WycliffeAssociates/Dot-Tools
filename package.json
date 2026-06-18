@@ -1,0 +1,31 @@
+{
+  "name": "dottools",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "editor:dev": "pnpm --filter dot-vids dev",
+    "editor:build": "pnpm --filter dot-vids build",
+    "ocr:dev": "pnpm --filter @dottools/ocr-app dev",
+    "playlist-cache:dev": "pnpm --filter dot-playlist-cache dev",
+    "playlist-cache:deploy": "pnpm --filter dot-playlist-cache run deploy",
+    "shared:build": "pnpm --filter @dottools/shared build",
+    "typecheck": "pnpm --filter @dottools/shared --filter @dottools/ocr-app --filter dot-playlist-cache typecheck",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "^7.0.0-dev.20260526.1",
+    "oxfmt": "^0.52.0",
+    "oxlint": "^1.67.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.3.0"
+}
