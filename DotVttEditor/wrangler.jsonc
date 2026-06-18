@@ -1,58 +1,58 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "dot-vids",
-  // Unified entrypoint provided by @astrojs/cloudflare v13 — handles both
-  // `astro dev` and the production worker. The adapter auto-generates the
-  // static `assets` config, so it's intentionally not set here.
-  "main": "@astrojs/cloudflare/entrypoints/server",
-  "compatibility_date": "2026-05-18",
-  "compatibility_flags": ["nodejs_compat"],
-  "observability": {
-    "enabled": true,
-  },
-  // `remote: true` routes these bindings to the real provisioned buckets
-  // during local dev. The Worker still executes locally — only the R2 reads
-  // and writes hit Cloudflare. Both `astro dev` (Cloudflare Vite plugin) and
-  // `wrangler dev` honor it automatically; no flag needed. Requires
-  // `wrangler login`. Run `wrangler dev --local` to fall back to simulated R2.
-  // https://developers.cloudflare.com/workers/development-testing/#remote-bindings
-  "r2_buckets": [
-    {
-      "binding": "DOT_ASSETS",
-      "bucket_name": "dot-assets",
-      "remote": true,
-    },
-    {
-      "binding": "DOT_TMP",
-      "bucket_name": "dot-tmp",
-      "remote": true,
-    },
-  ],
-  // Warm Brightcove-playlist cache written by the `dot-playlist-cache` worker.
-  // Same namespace id as DotPlaylistCache/wrangler.jsonc — we read it directly
-  // (zero-HTTP) and fall back to Brightcove on a miss. `remote: true` so local
-  // dev reads the real warmed values.
-  "kv_namespaces": [
-    {
-      "binding": "BRIGHTCOVE_PLAYLISTS",
-      "id": "c5ce9e1629aa4793a8da01aaadafbb30",
-      "remote": true,
-    },
-  ],
-  // Declares the secrets this Worker needs. At local dev Wrangler (and the
-  // Cloudflare Vite plugin behind `astro dev`) auto-loads these names from
-  // process.env — what `op run --env-file=.env.op` injects — so the dev scripts
-  // are just `op run … -- astro dev`, no CLOUDFLARE_INCLUDE_PROCESS_ENV flag and
-  // nothing on disk. scripts/push-secrets.mjs pushes the same set to production.
-  "secrets": {
-    "required": [
-      "ACCOUNT_ID",
-      "BC_CLIENT_ID",
-      "BC_CLIENT_SECRET",
-      "POLICY_KEY",
-      "PLAYER_ID",
-      "DOT_ASSETS_PUBLIC_URL",
-      "TMP_IMGS_BUCKET_URL",
-    ],
-  },
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "dot-vtt-editor",
+	// Unified entrypoint provided by @astrojs/cloudflare v13 — handles both
+	// `astro dev` and the production worker. The adapter auto-generates the
+	// static `assets` config, so it's intentionally not set here.
+	"main": "@astrojs/cloudflare/entrypoints/server",
+	"compatibility_date": "2026-05-18",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	// `remote: true` routes these bindings to the real provisioned buckets
+	// during local dev. The Worker still executes locally — only the R2 reads
+	// and writes hit Cloudflare. Both `astro dev` (Cloudflare Vite plugin) and
+	// `wrangler dev` honor it automatically; no flag needed. Requires
+	// `wrangler login`. Run `wrangler dev --local` to fall back to simulated R2.
+	// https://developers.cloudflare.com/workers/development-testing/#remote-bindings
+	"r2_buckets": [
+		{
+			"binding": "DOT_ASSETS",
+			"bucket_name": "dot-assets",
+			"remote": true
+		},
+		{
+			"binding": "DOT_TMP",
+			"bucket_name": "dot-tmp",
+			"remote": true
+		}
+	],
+	// Warm Brightcove-playlist cache written by the `dot-playlist-cache` worker.
+	// Same namespace id as DotPlaylistCache/wrangler.jsonc — we read it directly
+	// (zero-HTTP) and fall back to Brightcove on a miss. `remote: true` so local
+	// dev reads the real warmed values.
+	"kv_namespaces": [
+		{
+			"binding": "BRIGHTCOVE_PLAYLISTS",
+			"id": "c5ce9e1629aa4793a8da01aaadafbb30",
+			"remote": true
+		}
+	],
+	// Declares the secrets this Worker needs. At local dev Wrangler (and the
+	// Cloudflare Vite plugin behind `astro dev`) auto-loads these names from
+	// process.env — what `op run --env-file=.env.op` injects — so the dev scripts
+	// are just `op run … -- astro dev`, no CLOUDFLARE_INCLUDE_PROCESS_ENV flag and
+	// nothing on disk. scripts/push-secrets.mjs pushes the same set to production.
+	"secrets": {
+		"required": [
+			"ACCOUNT_ID",
+			"BC_CLIENT_ID",
+			"BC_CLIENT_SECRET",
+			"POLICY_KEY",
+			"PLAYER_ID",
+			"DOT_ASSETS_PUBLIC_URL",
+			"TMP_IMGS_BUCKET_URL"
+		]
+	}
 }
