@@ -90,6 +90,7 @@ jobs:
       # the load-secrets step above and the script's op run.
       - name: Deploy + sync secrets
         env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ steps.op-cf.outputs.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.op-cf.outputs.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm --filter dot-vids run deploy
