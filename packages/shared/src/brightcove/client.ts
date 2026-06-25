@@ -36,10 +36,12 @@ interface CachedToken {
  *   - CMS API: get_video, get_video_sources, list_playlists, list_playlist_videos, get_text_tracks
  *   - Playback API: get_playback_playlist (policy-key auth; what the cache worker
  *     warms and the public apps read)
- *   - Dynamic Ingest: ingest_text_tracks (the ONLY write path; the verbatim body
+ *   - Dynamic Ingest: ingest_text_tracks (APPEND-only — the verbatim body
  *     shape from the alt app is locked in `VTT_TRACK_CONSTANTS`)
+ *   - CMS API: PATCH text_tracks (delete/replace the array — Dynamic Ingest can
+ *     only append, so removing a stale track requires this)
  *
- * No CMS PATCH text_tracks. No retries. No server-side cache. Token cache only.
+ * No retries. No server-side cache. Token cache only.
  */
 export class BrightcoveClient {
   private readonly accountId: string;
@@ -226,30 +228,30 @@ export class BrightcoveClient {
   /* ----------------------- Dynamic Ingest ----------------------- */
 
   /**
-   * Publishes (or re-publishes) a `chapters` text track to Brightcove.
+   * Publishes a `chapters` text track to Brightcove via Dynamic Ingest.
    *
    * The body shape is locked to `VTT_TRACK_CONSTANTS` so it cannot drift from
    * the working alt-app contract: { kind: "chapters", label: "Verse Markers",
    * default: true, status: "published", embed_closed_caption: false }.
    *
-   * Per-call inputs: `url` (a public R2 URL of the VTT), `srclang` (defaults to
-   * "en"; override per video from custom_fields), and an optional
-   * `replaceTrackId` — when provided, Brightcove REPLACES that existing track
-   * in place instead of adding a new one. Omitting it adds a track (which is
-   * how duplicate "Chapters" tracks accumulate). Prefer `upsertChaptersTrack`,
-   * which looks the id up for you.
+   * IMPORTANT: Dynamic Ingest is APPEND-ONLY for text tracks — it always adds a
+   * new track and ignores any `id`/replace hint in the body (per Brightcove's
+   * WebVTT ingest guide). Calling this directly on a video that already has a
+   * chapters track creates a DUPLICATE. To re-publish without duplicating, use
+   * `upsertChaptersTrack`, which deletes the existing track via the CMS API
+   * first (the only API that can remove an ingested track).
+   *
+   * Per-call inputs: `url` (a public R2 URL of the VTT) and `srclang` (defaults
+   * to "en"; override per video from custom_fields).
    */
   async ingestTextTrack(
     videoId: string,
     publicVttUrl: string,
     srclang: string = DEFAULT_SRCLANG,
-    replaceTrackId?: string,
   ): Promise<BrightcoveIngestResponse> {
     const body = {
       text_tracks: [
         {
-          // `id` first so a replace request reads naturally; absent → add.
-          ...(replaceTrackId ? { id: replaceTrackId } : {}),
           url: publicVttUrl,
           srclang,
           kind: VTT_TRACK_CONSTANTS.kind,
@@ -268,11 +270,37 @@ export class BrightcoveClient {
   }
 
   /**
-   * Upsert the chapters track: if the video already has a `kind: "chapters"`
-   * track, replace it in place; otherwise add one. This is the right call for
-   * publishing — using `ingestTextTrack` without an id adds a duplicate track
-   * every time. (Pre-existing duplicates from earlier add-only behavior must be
-   * cleaned up once in Studio; from then on this keeps it singular.)
+   * Replace the video's entire `text_tracks` list via the CMS API.
+   *
+   * The CMS PATCH is NOT a delta — you must send the FULL array you want the
+   * video to end up with. Tracks omitted from `tracks` are deleted; `[]` clears
+   * all of them. This is the only API that can delete an ingested text track
+   * (Dynamic Ingest can only append). Note the CMS API treats an ingested
+   * track's `src` as read-only, so this can't swap VTT content — only delete or
+   * edit metadata.
+   */
+  async setTextTracks(videoId: string, tracks: BrightcoveTextTrack[]): Promise<void> {
+    await this.cms<void>("PATCH", `/videos/${encodeURIComponent(videoId)}`, {
+      text_tracks: tracks,
+    });
+  }
+
+  /**
+   * Publish the chapters track without duplicating it.
+   *
+   * Dynamic Ingest is append-only, so to keep a single chapters track we must
+   * delete any existing one(s) BEFORE ingesting the new VTT:
+   *   1. GET the current text tracks.
+   *   2. If any look like ours — `kind: "chapters"` AND a case-insensitive
+   *      "Verse Markers" label (both must match so we never touch an unrelated
+   *      chapters track or a same-labelled track of a different kind) — CMS-PATCH
+   *      the array with them removed (this also sweeps up pre-existing duplicates).
+   *   3. Dynamic Ingest the new VTT, which appends exactly one fresh track.
+   *
+   * There's a brief window between delete and ingest-completion where the video
+   * has no chapters track; that's acceptable for the review workflow. A rapid
+   * double-publish within the ~30s–2min ingest delay can still race (step 1
+   * won't see the in-flight track), but a single publish is now duplicate-free.
    */
   async upsertChaptersTrack(
     videoId: string,
@@ -280,8 +308,16 @@ export class BrightcoveClient {
     srclang: string = DEFAULT_SRCLANG,
   ): Promise<BrightcoveIngestResponse> {
     const tracks = await this.getTextTracks(videoId);
-    const existing = tracks.find((t) => t.kind === VTT_TRACK_CONSTANTS.kind);
-    return this.ingestTextTrack(videoId, publicVttUrl, srclang, existing?.id);
+    const isOurs = (t: BrightcoveTextTrack) =>
+      t.kind === VTT_TRACK_CONSTANTS.kind &&
+      t.label?.trim().toLowerCase() === VTT_TRACK_CONSTANTS.label.toLowerCase();
+    if (tracks.some(isOurs)) {
+      await this.setTextTracks(
+        videoId,
+        tracks.filter((t) => !isOurs(t)),
+      );
+    }
+    return this.ingestTextTrack(videoId, publicVttUrl, srclang);
   }
 
   /* --------------------------- Internals --------------------------- */

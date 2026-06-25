@@ -161,7 +161,7 @@ describe("BrightcoveClient.ingestTextTrack (LOAD-BEARING)", () => {
     expect(parsed.text_tracks[0].srclang).toBe("fr");
   });
 
-  it("includes the track id when replacing in place (no id when adding)", async () => {
+  it("never sends an id — Dynamic Ingest is append-only and ignores it", async () => {
     const { client, calls } = makeClient({
       responses: [
         {
@@ -171,42 +171,72 @@ describe("BrightcoveClient.ingestTextTrack (LOAD-BEARING)", () => {
         { match: (c) => c.url.includes("ingest"), body: { id: "x" } },
       ],
     });
-    await client.ingestTextTrack("vid-42", "https://r2.example.com/x.vtt", "en", "track-99");
+    await client.ingestTextTrack("vid-42", "https://r2.example.com/x.vtt", "en");
     const body = JSON.parse(String(calls.find((c) => c.url.includes("ingest"))!.init.body));
-    expect(body.text_tracks[0].id).toBe("track-99");
+    expect(body.text_tracks[0].id).toBeUndefined();
   });
 });
 
 describe("BrightcoveClient.upsertChaptersTrack", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("replaces an existing chapters track by id (no duplicate)", async () => {
+  it("deletes existing chapters track(s) via CMS PATCH, then ingests one fresh", async () => {
     const { client, calls } = makeClient({
       responses: [
         {
           match: (c) => c.url.includes("oauth"),
           body: { access_token: "tok", token_type: "Bearer", expires_in: 300 },
         },
+        // 1) GET current text tracks. Only tracks that are BOTH kind:"chapters"
+        //    AND labelled "Verse Markers" are ours. Includes a pre-existing
+        //    duplicate (deleted), plus three look-alikes that must be KEPT:
+        //    a captions track labelled "verse markers", a chapters track with a
+        //    different label, and an unrelated captions track.
         {
-          match: (c) => c.url.includes("cms.api.brightcove.com"),
+          match: (c) => c.url.includes("cms.api.brightcove.com") && c.init.method === "GET",
           body: {
             id: "vid-42",
             text_tracks: [
-              { id: "tt-chapters", src: "x", srclang: "en", kind: "chapters", label: "Verse Markers", default: true },
-              { id: "tt-captions", src: "y", srclang: "en", kind: "captions", label: "CC", default: false },
+              { id: "tt-chap-1", src: "x", srclang: "en", kind: "chapters", label: "Verse Markers", default: true },
+              { id: "tt-chap-2", src: "x2", srclang: "en", kind: "chapters", label: "verse markers", default: true },
+              { id: "tt-cc-labeled", src: "z", srclang: "en", kind: "captions", label: "Verse Markers", default: false },
+              { id: "tt-other-chap", src: "w", srclang: "en", kind: "chapters", label: "Scene Markers", default: false },
+              { id: "tt-cc", src: "y", srclang: "en", kind: "captions", label: "CC", default: false },
             ],
           },
         },
+        // 2) PATCH that removes ALL chapters tracks, keeping only the captions track.
+        { match: (c) => c.url.includes("cms.api.brightcove.com") && c.init.method === "PATCH", body: {} },
+        // 3) Dynamic Ingest appends the fresh track.
         { match: (c) => c.url.includes("ingest"), body: { id: "job-1" } },
       ],
     });
 
-    await client.upsertChaptersTrack("vid-42", "https://r2.example.com/x.vtt");
-    const body = JSON.parse(String(calls.find((c) => c.url.includes("ingest"))!.init.body));
-    expect(body.text_tracks[0].id).toBe("tt-chapters");
+    const resp = await client.upsertChaptersTrack("vid-42", "https://r2.example.com/x.vtt");
+    expect(resp).toStrictEqual({ id: "job-1" });
+
+    // The CMS PATCH removes ONLY the two chapters+"Verse Markers" tracks
+    // (case-insensitive on label), keeping every look-alike: the captions track
+    // labelled "Verse Markers", the "Scene Markers" chapters track, and the
+    // unrelated captions track.
+    const patch = calls.find(
+      (c) => c.url.includes("cms.api.brightcove.com") && c.init.method === "PATCH",
+    )!;
+    expect(JSON.parse(String(patch.init.body))).toStrictEqual({
+      text_tracks: [
+        { id: "tt-cc-labeled", src: "z", srclang: "en", kind: "captions", label: "Verse Markers", default: false },
+        { id: "tt-other-chap", src: "w", srclang: "en", kind: "chapters", label: "Scene Markers", default: false },
+        { id: "tt-cc", src: "y", srclang: "en", kind: "captions", label: "CC", default: false },
+      ],
+    });
+
+    // Then a single append-only ingest with no id.
+    const ingest = JSON.parse(String(calls.find((c) => c.url.includes("ingest"))!.init.body));
+    expect(ingest.text_tracks).toHaveLength(1);
+    expect(ingest.text_tracks[0].id).toBeUndefined();
   });
 
-  it("adds a track (omits id) when none of kind chapters exists yet", async () => {
+  it("skips the CMS PATCH and just ingests when no chapters track exists yet", async () => {
     const { client, calls } = makeClient({
       responses: [
         {
@@ -214,7 +244,7 @@ describe("BrightcoveClient.upsertChaptersTrack", () => {
           body: { access_token: "tok", token_type: "Bearer", expires_in: 300 },
         },
         {
-          match: (c) => c.url.includes("cms.api.brightcove.com"),
+          match: (c) => c.url.includes("cms.api.brightcove.com") && c.init.method === "GET",
           body: { id: "vid-42", text_tracks: [] },
         },
         { match: (c) => c.url.includes("ingest"), body: { id: "job-1" } },
@@ -222,8 +252,9 @@ describe("BrightcoveClient.upsertChaptersTrack", () => {
     });
 
     await client.upsertChaptersTrack("vid-42", "https://r2.example.com/x.vtt");
-    const body = JSON.parse(String(calls.find((c) => c.url.includes("ingest"))!.init.body));
-    expect(body.text_tracks[0].id).toBeUndefined();
+    expect(calls.some((c) => c.init.method === "PATCH")).toBe(false);
+    const ingest = JSON.parse(String(calls.find((c) => c.url.includes("ingest"))!.init.body));
+    expect(ingest.text_tracks[0].id).toBeUndefined();
   });
 });
 
